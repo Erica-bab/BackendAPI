@@ -5,11 +5,10 @@
 ![Python](https://img.shields.io/badge/Python-3.13+-blue?style=for-the-badge&logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green?style=for-the-badge&logo=fastapi)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange?style=for-the-badge&logo=mysql)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 **한양대학교 식당의 급식 정보를 조회하고, 평점 및 키워드 리뷰를 남길 수 있는 FastAPI 기반 REST API**
 
-[📖 API 문서](http://localhost:8000/docs) • [🚀 시작하기](#-빠른-시작) • [📋 API 목록](#-api-엔드포인트)
+[🌐 라이브 데모](https://에리카밥.com) • [📖 API 문서](https://에리카밥.com/docs) • [🚀 시작하기](#-빠른-시작) • [📋 API 목록](#-api-엔드포인트)
 
 </div>
 
@@ -183,15 +182,15 @@ python scripts/setup_db.py
 
 ```bash
 # 개발 모드
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 5401
 
 # 프로덕션 모드
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 5401
 ```
 
 ### 6️⃣ **급식 데이터 수집**
 
-서버 실행 후 브라우저에서 [API 문서](http://localhost:8000/docs) 접속하여 `POST /api/v1/meals/fetch` 실행
+서버 실행 후 브라우저에서 [API 문서](https://에리카밥.com/docs) 접속하여 `POST /api/v1/meals/fetch` 실행
 
 ---
 
@@ -231,7 +230,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ### 급식 정보 조회
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/meals/re11?year=2025&month=10&day=1"
+curl -X GET "https://에리카밥.com/api/v1/meals/re11?year=2025&month=10&day=1"
 ```
 
 **응답 예시:**
@@ -259,7 +258,7 @@ curl -X GET "http://localhost:8000/api/v1/meals/re11?year=2025&month=10&day=1"
 ### 평점 등록
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ratings/" \
+curl -X POST "https://에리카밥.com/api/v1/ratings/" \
   -H "Content-Type: application/json" \
   -d '{
     "meal_id": 1,
@@ -271,7 +270,7 @@ curl -X POST "http://localhost:8000/api/v1/ratings/" \
 ### 키워드 리뷰 등록
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/keywords/review" \
+curl -X POST "https://에리카밥.com/api/v1/keywords/review" \
   -H "Content-Type: application/json" \
   -d '{
     "meal_id": 1,
@@ -369,9 +368,9 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-EXPOSE 8000
+EXPOSE 5401
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5401"]
 ```
 
 ### Systemd 서비스
@@ -385,7 +384,7 @@ After=network.target
 Type=simple
 User=sdyserver
 WorkingDirectory=/home/sdyserver/web/fastapi/meal_api
-ExecStart=/home/sdyserver/web/fastapi/meal_api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+ExecStart=/home/sdyserver/web/fastapi/meal_api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 5401
 Restart=always
 
 [Install]
@@ -404,35 +403,42 @@ WantedBy=multi-user.target
 
 ---
 
-## 🤝 기여하기
+## 🌐 **라이브 서비스**
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+### **에리카밥.com** - 한양대 급식 정보 서비스
 
----
+이 API는 실제로 [**에리카밥.com**](https://에리카밥.com)에서 운영 중입니다!
 
-## 📄 라이선스
+#### **주요 기능**
+- ✅ **실시간 급식 정보**: 한양대 4개 식당 메뉴 조회
+- ✅ **평점 시스템**: 메뉴별 평점 및 통계
+- ✅ **키워드 리뷰**: 긍정/부정 코멘트 시스템
+- ✅ **자동 업데이트**: 매일 새벽 2시 자동 데이터 수집
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+#### **API 엔드포인트**
+- **기본 URL**: `https://에리카밥.com/api/v1`
+- **API 문서**: `https://에리카밥.com/docs`
+- **식당 목록**: `https://에리카밥.com/api/v1/meals/restaurants`
 
----
+#### **사용 예시**
+```bash
+# 교직원식당 오늘 메뉴 조회
+curl "https://에리카밥.com/api/v1/meals/re11/today"
 
-## 📞 지원
+# 학생식당 특정 날짜 메뉴 조회
+curl "https://에리카밥.com/api/v1/meals/re12?year=2025&month=10&day=1"
 
-- 📧 이메일: support@example.com
-- 🐛 이슈: [GitHub Issues](https://github.com/your-repo/issues)
-- 📖 문서: [API Documentation](http://localhost:8000/docs)
+# 메뉴 평점 등록
+curl -X POST "https://에리카밥.com/api/v1/ratings/" \
+  -H "Content-Type: application/json" \
+  -d '{"meal_id": 1, "user_id": "user123", "rating": 4.5}'
+```
 
 ---
 
 <div align="center">
 
-**⭐ 이 프로젝트가 도움이 되었다면 Star를 눌러주세요! ⭐**
-
-Made with ❤️ by [Your Name](https://github.com/your-username)
+🌐 **라이브 서비스**: [에리카밥.com](https://에리카밥.com)
 
 </div>
 
