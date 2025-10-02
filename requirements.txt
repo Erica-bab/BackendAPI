@@ -1,0 +1,31 @@
+# FastAPI 및 웹 프레임워크
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+
+# HTTP 요청
+requests==2.32.5
+urllib3==2.5.0
+
+# HTML 파싱
+beautifulsoup4==4.14.2
+soupsieve==2.8
+
+# SSL 인증서
+certifi==2025.8.3
+
+# 데이터베이스
+SQLAlchemy==2.0.36
+pymysql==1.1.1
+cryptography==44.0.0
+
+# 마이그레이션
+alembic==1.14.0
+
+# 스케줄러
+APScheduler==3.10.4
+
+# 기타 유틸리티
+python-dotenv==1.0.1
+
