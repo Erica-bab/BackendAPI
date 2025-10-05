@@ -57,7 +57,7 @@ class MealResponse(BaseModel):
         populate_by_name = True
 
 
-class RestaurantInfo(BaseModel):
+class RestaurantInfo_Detail(BaseModel):
     """식당 정보"""
     code: str = Field(..., description="식당 코드")
     name: str = Field(..., description="식당 이름")
@@ -67,9 +67,15 @@ class RestaurantInfo(BaseModel):
     latitude: Optional[str] = Field(None, description="위도")
     longitude: Optional[str] = Field(None, description="경도")
     description: Optional[str] = Field(None, description="위치 설명")
+    
+    
+class RestaurantInfo(BaseModel):
+    """식당 정보"""
+    code: str = Field(..., description="식당 코드")
+    name: str = Field(..., description="식당 이름")
 
 
-class RestaurantDetailInfo(RestaurantInfo):
+class RestaurantDetailInfo(RestaurantInfo_Detail):
     """식당 상세 정보 (위치 정보 포함)"""
     pass
 

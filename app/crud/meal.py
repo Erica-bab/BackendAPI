@@ -8,6 +8,11 @@ from app.models.restaurant import Restaurant
 from app.models.rating import Rating
 
 
+def get_all_restaurants(db: Session) -> List[Restaurant]:
+    """모든 식당 조회"""
+    return db.query(Restaurant).all()
+
+
 def get_restaurant_by_code(db: Session, code: str) -> Optional[Restaurant]:
     """식당 코드로 식당 조회"""
     return db.query(Restaurant).filter(Restaurant.code == code).first()
