@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from app.schemas.meal import MealResponse, RestaurantsResponse, RestaurantInfo, MealInDB
+from app.schemas.meal import MealResponse, RestaurantsResponse, RestaurantInfo, RestaurantDetailInfo, MealInDB
 from app.services.meal_service import meal_service
 from app.services.meal_fetcher import meal_fetcher
 from app.db.session import get_db
@@ -25,6 +25,35 @@ async def get_restaurants():
         for code, name in restaurants_data.items()
     ]
     return RestaurantsResponse(restaurants=restaurants)
+
+
+@router.get("/restaurants/{restaurant_code}", response_model=RestaurantDetailInfo, summary="식당 상세 정보 조회")
+async def get_restaurant_detail(restaurant_code: str):
+    """
+    특정 식당의 상세 정보(위치 포함)를 조회합니다.
+    
+    - **restaurant_code**: 식당 코드 (re11, re12, re13, re15)
+    """
+    # 식당 코드 확인
+    if restaurant_code not in settings.RESTAURANT_CODES:
+        raise HTTPException(status_code=404, detail="존재하지 않는 식당 코드입니다.")
+    
+    # 식당 기본 정보
+    restaurant_name = settings.RESTAURANT_CODES[restaurant_code]
+    
+    # 위치 정보 가져오기
+    location_info = settings.RESTAURANT_LOCATIONS.get(restaurant_code, {})
+    
+    return RestaurantDetailInfo(
+        code=restaurant_code,
+        name=restaurant_name,
+        address=location_info.get("address"),
+        building=location_info.get("building"),
+        floor=location_info.get("floor"),
+        latitude=location_info.get("latitude"),
+        longitude=location_info.get("longitude"),
+        description=location_info.get("description")
+    )
 
 
 @router.get("/{restaurant_code}", response_model=MealResponse, summary="급식 정보 조회 (DB)")

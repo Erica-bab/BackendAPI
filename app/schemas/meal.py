@@ -61,6 +61,17 @@ class RestaurantInfo(BaseModel):
     """식당 정보"""
     code: str = Field(..., description="식당 코드")
     name: str = Field(..., description="식당 이름")
+    address: Optional[str] = Field(None, description="주소")
+    building: Optional[str] = Field(None, description="건물명")
+    floor: Optional[str] = Field(None, description="층수")
+    latitude: Optional[str] = Field(None, description="위도")
+    longitude: Optional[str] = Field(None, description="경도")
+    description: Optional[str] = Field(None, description="위치 설명")
+
+
+class RestaurantDetailInfo(RestaurantInfo):
+    """식당 상세 정보 (위치 정보 포함)"""
+    pass
 
 
 class RestaurantsResponse(BaseModel):

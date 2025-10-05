@@ -21,9 +21,10 @@
 <td width="50%">
 
 ### 🍚 **급식 정보 조회**
-- 한양대 4개 식당 실시간 메뉴
+- 한양대 ERICA 4개 식당 실시간 메뉴
 - 조식/중식/석식 분류
 - 메뉴별 상세 정보 (가격, 이미지)
+- 웹에서 직접 파싱 가능
 
 </td>
 <td width="50%">
@@ -39,17 +40,37 @@
 <td width="50%">
 
 ### 🏷️ **키워드 리뷰**
-- 18개 사전 정의 키워드
+- 30개 사전 정의 키워드 (긍정/부정)
 - 맛/양/품질/건강 카테고리
 - 상위 키워드 통계
 
 </td>
 <td width="50%">
 
+### 🗺️ **식당 위치 정보**
+- 각 식당의 상세 위치 정보
+- 건물명, 층수, 주소 제공
+- GPS 좌표 (위도/경도)
+- 위치 설명 및 안내
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 ### 🔄 **자동 데이터 수집**
 - 매일 새벽 2시 자동 수집
 - 2주치 데이터 미리 저장
 - 실시간 API 응답
+- 관리자 인증 시스템
+
+</td>
+<td width="50%">
+
+### 🔐 **보안 기능**
+- 관리자 API 키 인증
+- 패치 API 접근 제한
+- 안전한 데이터 관리
 
 </td>
 </tr>
@@ -98,7 +119,7 @@ graph TB
 <tr>
 <td><code>restaurants</code></td>
 <td>식당 정보</td>
-<td>code, name</td>
+<td>code, name, address, building, floor, latitude, longitude, description</td>
 </tr>
 <tr>
 <td><code>meals</code></td>
@@ -201,11 +222,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 5401
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | `GET` | `/api/v1/meals/restaurants` | 식당 목록 조회 |
+| `GET` | `/api/v1/meals/restaurants/{restaurant_code}` | 식당 상세 정보 (위치 포함) |
 | `GET` | `/api/v1/meals/{restaurant_code}` | 급식 정보 조회 (DB) |
 | `GET` | `/api/v1/meals/{restaurant_code}/today` | 오늘의 급식 정보 |
 | `GET` | `/api/v1/meals/available-dates` | 저장된 급식 날짜 조회 |
 | `GET` | `/api/v1/meals/parse/{restaurant_code}` | 웹에서 급식 정보 직접 파싱 |
-| `POST` | `/api/v1/meals/fetch` | 급식 정보 수집 (관리자용) |
+| `POST` | `/api/v1/meals/fetch` | 급식 정보 수집 (관리자용) 🔐 |
 
 ### ⭐ 평점
 
@@ -228,6 +250,43 @@ uvicorn app.main:app --host 0.0.0.0 --port 5401
 ---
 
 ## 📝 API 사용 예시
+
+### 식당 위치 정보 조회
+
+```bash
+# 식당 상세 정보 (위치 포함) 조회
+curl -X GET "https://에리카밥.com/api/v1/meals/restaurants/re13"
+```
+
+**응답 예시:**
+```json
+{
+  "code": "re13",
+  "name": "창의인재원식당",
+  "address": "경기도 안산시 상록구 한양대학로 55",
+  "building": "창의인재원",
+  "floor": "1층",
+  "latitude": "37.2980",
+  "longitude": "126.8400",
+  "description": "창의인재원 1층에 위치한 식당입니다."
+}
+```
+
+### 관리자 API (인증 필요)
+
+```bash
+# 급식 정보 수집 (관리자용)
+curl -X POST "https://에리카밥.com/api/v1/meals/fetch" \
+  -H "X-API-Key: admin_meal_api_2025"
+```
+
+**응답 예시:**
+```json
+{
+  "message": "급식 정보 수집이 백그라운드에서 시작되었습니다.",
+  "days_ahead": 14
+}
+```
 
 ### 저장된 급식 날짜 조회
 
@@ -464,10 +523,13 @@ WantedBy=multi-user.target
 이 API는 실제로 [**에리카밥.com**](https://에리카밥.com)에서 운영 중입니다!
 
 #### **주요 기능**
-- ✅ **실시간 급식 정보**: 한양대 4개 식당 메뉴 조회
+- ✅ **실시간 급식 정보**: 한양대 ERICA 4개 식당 메뉴 조회
+- ✅ **식당 위치 정보**: 건물명, 층수, GPS 좌표 제공
 - ✅ **평점 시스템**: 메뉴별 평점 및 통계
-- ✅ **키워드 리뷰**: 긍정/부정 코멘트 시스템
+- ✅ **키워드 리뷰**: 긍정/부정 코멘트 시스템 (30개 키워드)
+- ✅ **웹 파싱**: 실시간 웹사이트 파싱 기능
 - ✅ **자동 업데이트**: 매일 새벽 2시 자동 데이터 수집
+- ✅ **관리자 인증**: API 키 기반 보안 시스템
 
 #### **API 엔드포인트**
 - **기본 URL**: `https://에리카밥.com/api/v1`
@@ -476,14 +538,21 @@ WantedBy=multi-user.target
 
 #### **사용 예시**
 ```bash
+# 식당 위치 정보 조회
+curl "https://에리카밥.com/api/v1/meals/restaurants/re13"
+
 # 교직원식당 오늘 메뉴 조회
 curl "https://에리카밥.com/api/v1/meals/re11/today"
 
-# 학생식당 특정 날짜 메뉴 조회
-curl "https://에리카밥.com/api/v1/meals/re12?year=2025&month=10&day=1"
+# 웹에서 실시간 파싱
+curl "https://에리카밥.com/api/v1/meals/parse/re12?year=2025&month=10&day=1"
 
 # 저장된 급식 날짜 조회
 curl "https://에리카밥.com/api/v1/meals/available-dates"
+
+# 관리자용 데이터 수집 (인증 필요)
+curl -X POST "https://에리카밥.com/api/v1/meals/fetch" \
+  -H "X-API-Key: admin_meal_api_2025"
 
 # 메뉴 평점 등록
 curl -X POST "https://에리카밥.com/api/v1/ratings/" \

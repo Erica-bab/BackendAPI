@@ -23,6 +23,42 @@ class Settings(BaseSettings):
         "re15": "창업보육센터"
     }
     
+    # 식당 위치 정보
+    RESTAURANT_LOCATIONS: dict = {
+        "re11": {
+            "address": "경기도 안산시 상록구 한양대학로 55",
+            "building": "학생회관",
+            "floor": "3층",
+            "latitude": "37.298047",
+            "longitude": "126.834415",
+            "description": "학생회관 3층에 위치한 교직원 식당입니다."
+        },
+        "re12": {
+            "address": "경기도 안산시 상록구 한양대학로 55",
+            "building": "학생회관",
+            "floor": "2층",
+            "latitude": "37.298047",
+            "longitude": "126.834415",
+            "description": "학생회관 2층에 위치한 학생 식당입니다."
+        },
+        "re13": {
+            "address": "경기도 안산시 상록구 한양대학로 55",
+            "building": "창의인재원",
+            "floor": "1층",
+            "latitude": "37.291276",
+            "longitude": "126.836354",
+            "description": "창의인재원 1층에 위치한 식당입니다."
+        },
+        "re15": {
+            "address": "경기도 안산시 상록구 한양대학로 55",
+            "building": "창업보육센터",
+            "floor": "지하 1층",
+            "latitude": "37.295626",
+            "longitude": "126.837253",
+            "description": "창업보육센터 지하 1층에 위치한 식당입니다."
+        }
+    }
+    
     # 데이터베이스 설정
     DATABASE_URL: str = "mysql+pymysql://user:password@localhost:3306/meal_db?charset=utf8mb4"
     
