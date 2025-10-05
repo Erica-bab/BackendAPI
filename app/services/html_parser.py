@@ -61,25 +61,192 @@ class HTMLParser:
         
         return date, day_of_week
     
+    def _get_current_day_of_week(self, soup: BeautifulSoup) -> str:
+        """현재 요일 가져오기"""
+        day_selc = soup.find("div", class_="day-selc")
+        if day_selc:
+            spans = day_selc.find_all("span")
+            for span in spans:
+                text = span.get_text(strip=True)
+                if text in ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]:
+                    return text
+        return ""
+    
     def _parse_meals(self, soup: BeautifulSoup) -> Dict[str, List[Dict]]:
-        """급식 메뉴 파싱"""
+        """급식 메뉴 파싱 (h4 d-title2 클래스 기반)"""
         meals = {"조식": [], "중식": [], "석식": []}
-        sections = soup.find_all("div", class_="in-box")
         
-        for section in sections:
-            title_tag = section.find("h4", class_="d-title2")
-            if not title_tag:
+        # h4 태그에서 d-title2 클래스를 가진 요소들 찾기
+        h4_elements = soup.find_all("h4", class_="d-title2")
+        
+        for h4 in h4_elements:
+            text = h4.get_text(strip=True)
+            
+            # 식사 종류 확인
+            meal_type = None
+            if "조식" in text:
+                meal_type = "조식"
+            elif "중식" in text:
+                meal_type = "중식"
+            elif "석식" in text:
+                meal_type = "석식"
+            
+            if not meal_type:
                 continue
             
-            meal_type = title_tag.get_text(strip=True)
-            items = section.find_all("li", class_="span3")
+            # h4 다음에 오는 메뉴 정보 찾기
+            menu_items = self._find_menu_items_after_h4(h4)
             
-            for item in items:
-                meal_item = self._parse_meal_item(item)
-                if meal_item:
-                    meals[meal_type].append(meal_item)
+            for menu_data in menu_items:
+                if menu_data.get("menu_text"):
+                    # 메뉴 파싱
+                    meal_item = self._parse_menu_item(menu_data, meal_type)
+                    if meal_item:
+                        meals[meal_type].append(meal_item)
         
         return meals
+    
+    def _find_menu_items_after_h4(self, h4_element) -> List[Dict]:
+        """h4 요소 다음에 오는 메뉴 아이템들 찾기"""
+        menu_items = []
+        
+        # h4의 부모 요소에서 div.bbs 찾기
+        parent = h4_element.parent
+        if not parent:
+            return menu_items
+        
+        # div.bbs 찾기
+        bbs_divs = parent.find_all("div", class_="bbs")
+        
+        for bbs_div in bbs_divs:
+            # ul.thumbnails > li.span3 구조 찾기
+            ul_thumbnails = bbs_div.find_all("ul", class_="thumbnails")
+            
+            for ul in ul_thumbnails:
+                li_span3_elements = ul.find_all("li", class_="span3")
+                
+                for li in li_span3_elements:
+                    # h3 태그에서 메뉴 텍스트 가져오기
+                    h3_tag = li.find("h3")
+                    menu_text = h3_tag.get_text(strip=True) if h3_tag else ""
+                    
+                    # p.price 태그에서 가격 가져오기
+                    price_tag = li.find("p", class_="price")
+                    price_text = price_tag.get_text(strip=True) if price_tag else ""
+                    
+                    # img 태그에서 이미지 URL 가져오기
+                    img_tag = li.find("img")
+                    image_url = img_tag.get("src", "") if img_tag else ""
+                    if image_url.startswith("/"):
+                        image_url = "https://www.hanyang.ac.kr" + image_url
+                    
+                    if menu_text:
+                        menu_items.append({
+                            "menu_text": menu_text,
+                            "price": price_text,
+                            "image_url": image_url
+                        })
+        
+        return menu_items
+    
+    def _parse_menu_item(self, menu_data: Dict, meal_type: str) -> Dict:
+        """메뉴 아이템 파싱"""
+        menu_text = menu_data.get("menu_text", "")
+        if not menu_text or menu_text == "-":
+            return None
+        
+        # 메뉴 유효성 검사 (안내 문구 필터링)
+        if self._is_notice_text(menu_text):
+            return None
+        
+        # 태그 추출 (대괄호 안의 텍스트)
+        tags = self._extract_tags(menu_text)
+        
+        # 태그를 제거한 메뉴 리스트
+        korean_name_list = self._split_to_list(menu_text)
+        
+        # 메뉴 리스트 유효성 검사
+        if not self._is_valid_menu_list(korean_name_list):
+            return None
+        
+        return {
+            "korean": korean_name_list,
+            "tags": tags,
+            "price": menu_data.get("price", ""),
+            "image": menu_data.get("image_url", ""),
+            "meal_type": meal_type
+        }
+    
+    def _parse_table_menu_item(self, menu_text: str, meal_type: str) -> Dict:
+        """테이블에서 메뉴 아이템 파싱"""
+        if not menu_text or menu_text == "-":
+            return None
+        
+        # 메뉴 유효성 검사 (안내 문구 필터링)
+        if self._is_notice_text(menu_text):
+            return None
+        
+        # 태그 추출 (대괄호 안의 텍스트)
+        tags = self._extract_tags(menu_text)
+        
+        # 태그를 제거한 메뉴 리스트
+        korean_name_list = self._split_to_list(menu_text)
+        
+        # 메뉴 리스트 유효성 검사
+        if not self._is_valid_menu_list(korean_name_list):
+            return None
+        
+        return {
+            "korean": korean_name_list,
+            "tags": tags,
+            "price": "",  # 테이블 구조에서는 가격 정보가 없음
+            "image": "",  # 테이블 구조에서는 이미지 정보가 없음
+            "meal_type": meal_type
+        }
+    
+    def _is_notice_text(self, text: str) -> bool:
+        """안내 문구인지 확인"""
+        # 더 정확한 안내 문구 패턴 매칭
+        notice_patterns = [
+            r"운영합니다",
+            r"코너만.*운영",
+            r"금요일.*한.*코너만",
+            r"휴무|휴업",
+            r"문의.*전화",
+            r"연락.*안내",
+            r"공지.*알림"
+        ]
+        
+        import re
+        for pattern in notice_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        
+        # 단순 키워드 매칭 (더 엄격하게)
+        simple_keywords = ["운영합니다", "휴무", "휴업", "문의", "전화", "연락", "안내", "공지", "알림"]
+        text_lower = text.lower()
+        for keyword in simple_keywords:
+            if keyword in text_lower:
+                return True
+        
+        return False
+    
+    def _is_valid_menu_list(self, menu_list: List[str]) -> bool:
+        """메뉴 리스트가 유효한지 확인"""
+        if not menu_list:
+            return False
+        
+        # 너무 짧은 단어들만 있는 경우 필터링
+        valid_items = [item for item in menu_list if len(item) >= 2]
+        if len(valid_items) < len(menu_list) * 0.5:  # 50% 이상이 유효해야 함
+            return False
+        
+        # 안내 문구 키워드가 포함된 경우 필터링
+        for item in menu_list:
+            if self._is_notice_text(item):
+                return False
+        
+        return True
     
     def _parse_meal_item(self, item) -> Dict:
         """개별 메뉴 아이템 파싱"""
@@ -139,6 +306,10 @@ class HTMLParser:
         # 대괄호 제거 (태그는 별도로 처리됨)
         text_without_tags = re.sub(r'\[[^\]]+\]', '', text)
         
+        # 특별한 경우: 안내 문구는 그대로 반환
+        if any(keyword in text_without_tags for keyword in ["운영 없습니다", "추석연휴", "휴무", "휴업"]):
+            return [text_without_tags.strip()]
+        
         # 1순위: 탭 문자로 분리 시도
         if '\t' in text_without_tags:
             items = re.split(r'\s*\t\s*', text_without_tags)
@@ -166,7 +337,14 @@ class HTMLParser:
         if result and len(result) > 1:
             return result
         
-        # 5순위: 단일 공백으로 분리 (모든 식당에서 리스트로 만들기)
+        # 5순위: 특정 패턴으로 분리 (예: "요구르트참치김치찌개" -> "요구르트", "참치김치찌개")
+        # 한글 단어 경계를 찾아서 분리
+        korean_words = re.findall(r'[가-힣]+', text_without_tags)
+        if len(korean_words) > 1:
+            # 단어가 2개 이상이면 분리
+            return korean_words
+        
+        # 6순위: 단일 공백으로 분리 (모든 식당에서 리스트로 만들기)
         # 각 단어를 개별 아이템으로 분리
         items = text_without_tags.split()
         result = [item.strip() for item in items if item.strip()]

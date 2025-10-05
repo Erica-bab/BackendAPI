@@ -109,6 +109,35 @@ class MealService:
         except requests.exceptions.RequestException as e:
             raise requests.exceptions.RequestException(f"한양대 서버 요청 실패: {e}")
     
+    def get_meal_html(
+        self, 
+        restaurant_code: str, 
+        year: int, 
+        month: int, 
+        day: int
+    ) -> str:
+        """
+        한양대 서버에서 HTML 가져오기 (외부 호출용)
+        
+        Args:
+            restaurant_code: 식당 코드 (re11, re12, re13, re15)
+            year: 연도
+            month: 월 (1-12)
+            day: 일 (1-31)
+            
+        Returns:
+            HTML 문자열
+            
+        Raises:
+            ValueError: 잘못된 파라미터
+            requests.exceptions.RequestException: 요청 실패
+        """
+        # 입력값 검증
+        self._validate_params(restaurant_code, year, month, day)
+        
+        # HTML 가져오기
+        return self._fetch_html(restaurant_code, year, month, day)
+    
     def get_available_restaurants(self) -> Dict[str, str]:
         """사용 가능한 식당 목록 반환"""
         return settings.RESTAURANT_CODES

@@ -66,13 +66,18 @@ class MealFetcher:
         target_date: date
     ) -> int:
         """특정 날짜의 급식 정보 수집 및 저장"""
-        # 한양대 서버에서 데이터 가져오기
-        meal_data = self.meal_service.get_meal_info(
+        # 한양대 서버에서 HTML 가져오기
+        html_content = self.meal_service.get_meal_html(
             restaurant_code,
             target_date.year,
             target_date.month,
             target_date.day
         )
+        
+        # HTML 파싱
+        from app.services.html_parser import HTMLParser
+        html_parser = HTMLParser()
+        meal_data = html_parser.parse_meal_html(html_content)
         
         saved_count = 0
         
@@ -82,25 +87,19 @@ class MealFetcher:
             
             for meal_item in meals:
                 try:
-                    # 중복 체크를 위한 메뉴명 문자열 생성
-                    korean_name_str = str(meal_item["korean"]) if isinstance(meal_item["korean"], list) else meal_item["korean"]
+                    # 중복 체크 (같은 날짜, 같은 식사종류, 같은 메뉴명)
+                    from app.models.meal import Meal
+                    new_korean = meal_item["korean"] if isinstance(meal_item["korean"], list) else [meal_item["korean"]]
                     
-                    # 중복 체크 (같은 날짜, 같은 메뉴명)
-                    existing = db.query(crud_meal.Meal).filter(
-                        crud_meal.Meal.restaurant_id == restaurant.id,
-                        crud_meal.Meal.date == target_date,
-                        crud_meal.Meal.meal_type == meal_type
+                    existing = db.query(Meal).filter(
+                        Meal.restaurant_id == restaurant.id,
+                        Meal.date == target_date,
+                        Meal.meal_type == meal_type,
+                        Meal.korean_name == new_korean
                     ).first()
                     
-                    # 리스트로 변환되었는지 확인하고 기존과 동일한지 체크
-                    if existing:
-                        existing_korean = existing.korean_name if isinstance(existing.korean_name, list) else [existing.korean_name]
-                        new_korean = meal_item["korean"] if isinstance(meal_item["korean"], list) else [meal_item["korean"]]
-                        if existing_korean == new_korean:
-                            continue
-                    
+                    # 중복이 없으면 새로운 메뉴 생성, 있으면 업데이트
                     if not existing:
-                        # 새로운 메뉴 생성
                         crud_meal.create_meal(
                             db=db,
                             restaurant_id=restaurant.id,
@@ -113,9 +112,22 @@ class MealFetcher:
                             image_url=meal_item.get("image", "")
                         )
                         saved_count += 1
+                        logger.info(f"새 메뉴 저장: {restaurant.name} {target_date} {meal_type} - {new_korean}")
+                    else:
+                        # 기존 메뉴 정보 업데이트 (메뉴 변경사항 반영)
+                        existing.tags = meal_item.get("tags", [])
+                        existing.price = meal_item.get("price", "")
+                        existing.image_url = meal_item.get("image", "")
+                        existing.day_of_week = meal_data.get("day_of_week", "")
+                        db.commit()
+                        saved_count += 1
+                        logger.info(f"메뉴 업데이트: {restaurant.name} {target_date} {meal_type} - {new_korean}")
                 
                 except Exception as e:
                     logger.error(f"메뉴 저장 실패: {e}")
+                    logger.error(f"메뉴 데이터: {meal_item}")
+                    import traceback
+                    logger.error(f"상세 오류: {traceback.format_exc()}")
         
         return saved_count
 

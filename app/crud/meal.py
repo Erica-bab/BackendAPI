@@ -94,6 +94,27 @@ def get_meal_by_id(db: Session, meal_id: int) -> Optional[Meal]:
     return db.query(Meal).filter(Meal.id == meal_id).first()
 
 
+def get_available_dates(db: Session, restaurant_code: Optional[str] = None) -> List[str]:
+    """저장된 급식 날짜 목록 조회"""
+    from sqlalchemy import distinct, func
+    
+    query = db.query(distinct(Meal.date))
+    
+    if restaurant_code:
+        # 특정 식당의 날짜만 조회
+        restaurant = get_restaurant_by_code(db, restaurant_code)
+        if restaurant:
+            query = query.filter(Meal.restaurant_id == restaurant.id)
+        else:
+            return []
+    
+    # 날짜 순으로 정렬
+    dates = query.order_by(Meal.date).all()
+    
+    # 날짜를 문자열로 변환 (YYYY-MM-DD 형식)
+    return [str(date[0]) for date in dates]
+
+
 def delete_meals_by_date_range(
     db: Session,
     restaurant_id: int,
