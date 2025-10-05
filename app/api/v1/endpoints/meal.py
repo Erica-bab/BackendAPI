@@ -9,6 +9,7 @@ from app.services.meal_fetcher import meal_fetcher
 from app.db.session import get_db
 from app.crud import meal as crud_meal
 from app.core.config import settings
+from app.api.dependencies import AdminAuth
 
 router = APIRouter()
 
@@ -181,13 +182,16 @@ async def parse_meal_from_web(
 @router.post("/fetch", summary="급식 정보 수집 (관리자용)")
 async def fetch_meals(
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    api_key: str = AdminAuth
 ):
     """
     급식 정보를 수동으로 수집합니다. (관리자용)
     
     현재 날짜부터 설정된 기간(기본 14일)의 급식 정보를 한양대 서버에서 가져와 DB에 저장합니다.
     백그라운드에서 실행되므로 즉시 응답을 받습니다.
+    
+    **인증 필요**: X-API-Key 헤더에 관리자 API 키를 포함해야 합니다.
     """
     background_tasks.add_task(meal_fetcher.fetch_and_store_meals, db)
     return {

@@ -1,4 +1,4 @@
-# 🍽️ 한양대학교 급식 API v2.0
+# 🍽️ 한양대학교 ERICA 급식 API v2.0
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green?style=for-the-badge&logo=fastapi)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange?style=for-the-badge&logo=mysql)
 
-**한양대학교 식당의 급식 정보를 조회하고, 평점 및 키워드 리뷰를 남길 수 있는 FastAPI 기반 REST API**
+**한양대학교 ERICA 식당의 급식 정보를 조회하고, 평점 및 키워드 리뷰를 남길 수 있는 FastAPI 기반 REST API**
 
 [🌐 라이브 데모](https://에리카밥.com) • [📖 API 문서](https://에리카밥.com/docs) • [🚀 시작하기](#-빠른-시작) • [📋 API 목록](#-api-엔드포인트)
 
@@ -130,8 +130,8 @@ graph TB
 
 ```bash
 # 저장소 클론
-git clone <repository-url>
-cd meal_api
+git clone https://github.com/Erica-bab/BackendAPI
+cd BackendAPI
 
 # 가상환경 생성 및 활성화
 python -m venv venv
@@ -436,9 +436,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=sdyserver
-WorkingDirectory=/home/sdyserver/web/fastapi/meal_api
-ExecStart=/home/sdyserver/web/fastapi/meal_api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 5401
+User=<username>
+WorkingDirectory=<your-project-path>
+ExecStart=<your-project-path>/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 5401
 Restart=always
 
 [Install]
