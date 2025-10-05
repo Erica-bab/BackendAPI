@@ -59,6 +59,29 @@ class Settings(BaseSettings):
         }
     }
     
+    RESTAURANT_OPEN_TIMES: dict = {
+        "re11": {
+            "Breakfast": None,
+            "Lunch": "11:30 ~ 13:30",
+            "Dinner": None
+            },
+        "re12": {
+            "Breakfast": None,
+            "Lunch": "11:30 ~ 13:30",
+            "Dinner": None
+            },
+        "re13": {
+            "Breakfast": "07:40 ~ 09:00",
+            "Lunch": "11:30 ~ 13:20",
+            "Dinner": "17:30 ~ 19:00"
+            },
+        "re15": {
+            "Breakfast": None,
+            "Lunch": "11:30 ~ 13:30",
+            "Dinner": "17:00 ~ 18:30"
+            },
+    }
+    
     # 데이터베이스 설정
     DATABASE_URL: str = "mysql+pymysql://user:password@localhost:3306/meal_db?charset=utf8mb4"
     

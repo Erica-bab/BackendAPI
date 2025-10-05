@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, JSON
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -18,6 +18,9 @@ class Restaurant(Base):
     latitude = Column(String(20), comment="위도")
     longitude = Column(String(20), comment="경도")
     description = Column(String(500), comment="위치 설명")
+    
+    # 운영시간 정보 (JSON으로 저장)
+    open_times = Column(JSON, comment="운영시간 정보")
     
     # 관계
     meals = relationship("Meal", back_populates="restaurant", cascade="all, delete-orphan")

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import date as date_type
 
 
@@ -67,6 +67,7 @@ class RestaurantInfo_Detail(BaseModel):
     latitude: Optional[str] = Field(None, description="위도")
     longitude: Optional[str] = Field(None, description="경도")
     description: Optional[str] = Field(None, description="위치 설명")
+    open_times: Optional[Dict[str, Optional[str]]] = Field(None, description="운영시간 정보")
     
     
 class RestaurantInfo(BaseModel):

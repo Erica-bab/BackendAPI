@@ -30,7 +30,7 @@ async def get_restaurants():
 @router.get("/restaurants/{restaurant_code}", response_model=RestaurantDetailInfo, summary="식당 상세 정보 조회")
 async def get_restaurant_detail(restaurant_code: str):
     """
-    특정 식당의 상세 정보(위치 포함)를 조회합니다.
+    특정 식당의 상세 정보(위치 및 운영시간 포함)를 조회합니다.
     
     - **restaurant_code**: 식당 코드 (re11, re12, re13, re15)
     """
@@ -44,6 +44,9 @@ async def get_restaurant_detail(restaurant_code: str):
     # 위치 정보 가져오기
     location_info = settings.RESTAURANT_LOCATIONS.get(restaurant_code, {})
     
+    # 운영시간 정보 가져오기
+    open_times = settings.RESTAURANT_OPEN_TIMES.get(restaurant_code, {})
+    
     return RestaurantDetailInfo(
         code=restaurant_code,
         name=restaurant_name,
@@ -52,7 +55,8 @@ async def get_restaurant_detail(restaurant_code: str):
         floor=location_info.get("floor"),
         latitude=location_info.get("latitude"),
         longitude=location_info.get("longitude"),
-        description=location_info.get("description")
+        description=location_info.get("description"),
+        open_times=open_times
     )
 
 
