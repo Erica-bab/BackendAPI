@@ -136,3 +136,53 @@ def delete_meals_by_date_range(
     ).delete()
     db.commit()
 
+
+def get_meals_flexible(
+    db: Session,
+    target_date: date,
+    restaurant_codes: Optional[List[str]] = None,
+    meal_types: Optional[List[str]] = None
+) -> List[Meal]:
+    """
+    유연한 급식 조회 (평점 정보 포함)
+    
+    Args:
+        db: DB 세션
+        target_date: 조회할 날짜
+        restaurant_codes: 식당 코드 리스트 (None이면 모든 식당)
+        meal_types: 식사 종류 리스트 (None이면 모든 식사)
+    
+    Returns:
+        조건에 맞는 급식 리스트
+    """
+    query = db.query(
+        Meal,
+        func.avg(Rating.rating).label('average_rating'),
+        func.count(Rating.id).label('rating_count')
+    ).join(
+        Restaurant, Meal.restaurant_id == Restaurant.id
+    ).outerjoin(
+        Rating, Meal.id == Rating.meal_id
+    ).filter(
+        Meal.date == target_date
+    )
+    
+    # 식당 코드 필터
+    if restaurant_codes:
+        query = query.filter(Restaurant.code.in_(restaurant_codes))
+    
+    # 식사 종류 필터
+    if meal_types:
+        query = query.filter(Meal.meal_type.in_(meal_types))
+    
+    meals = query.group_by(Meal.id).all()
+    
+    # 평점 정보를 Meal 객체에 동적으로 추가
+    result = []
+    for meal, avg_rating, rating_count in meals:
+        meal.average_rating = round(avg_rating, 2) if avg_rating else None
+        meal.rating_count = rating_count or 0
+        result.append(meal)
+    
+    return result
+

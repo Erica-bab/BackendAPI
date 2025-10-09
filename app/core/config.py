@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     # API 설정
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "한양대 ERICA 급식 API"
-    VERSION: str = "2.0.0"
+    VERSION: str = "3.5.2"
     DESCRIPTION: str = "한양대학교 ERICA 식당 메뉴 조회 및 평점/리뷰 API"
     
     # CORS 설정

@@ -24,6 +24,7 @@
 - 한양대 ERICA 4개 식당 실시간 메뉴
 - 조식/중식/석식 분류
 - 메뉴별 상세 정보 (가격, 이미지)
+- **유연한 조회**: 식당/시간대 자유 조합
 - 웹에서 직접 파싱 가능
 
 </td>
@@ -222,10 +223,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 5401
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| `GET` | `/api/v1/meals/restaurants` | 식당 목록 조회 |
-| `GET` | `/api/v1/meals/restaurants/{restaurant_code}` | 식당 상세 정보 (위치 및 운영시간 포함) |
-| `GET` | `/api/v1/meals/{restaurant_code}` | 급식 정보 조회 (DB) |
-| `GET` | `/api/v1/meals/{restaurant_code}/today` | 오늘의 급식 정보 |
+| `GET` | `/api/v1/meals` | **급식 정보 조회** (식당/시간대 자유 조합) |
+| `GET` | `/api/v1/meals/restaurants` | 식당 정보 조회 (위치 및 운영시간 포함) |
 | `GET` | `/api/v1/meals/available-dates` | 저장된 급식 날짜 조회 |
 | `GET` | `/api/v1/meals/parse/{restaurant_code}` | 웹에서 급식 정보 직접 파싱 |
 | `POST` | `/api/v1/meals/fetch` | 급식 정보 수집 (관리자용) 🔐 |
@@ -252,29 +251,42 @@ uvicorn app.main:app --host 0.0.0.0 --port 5401
 
 ## 📝 API 사용 예시
 
-### 식당 위치 정보 및 운영시간 조회
+### 식당 정보 조회
 
+#### 모든 식당 정보 조회
 ```bash
-# 식당 상세 정보 (위치 및 운영시간 포함) 조회
-curl -X GET "https://에리카밥.com/api/v1/meals/restaurants/re13"
+curl -X GET "https://에리카밥.com/api/v1/meals/restaurants"
+```
+
+#### 특정 식당(들) 정보 조회
+```bash
+# 한 개 식당
+curl -X GET "https://에리카밥.com/api/v1/meals/restaurants?restaurant_codes=re13"
+
+# 여러 식당
+curl -X GET "https://에리카밥.com/api/v1/meals/restaurants?restaurant_codes=re11,re13"
 ```
 
 **응답 예시:**
 ```json
 {
-  "code": "re13",
-  "name": "창의인재원식당",
-  "address": "경기도 안산시 상록구 한양대학로 55",
-  "building": "창의인재원",
-  "floor": "1층",
-  "latitude": "37.291276",
-  "longitude": "126.836354",
-  "description": "창의인재원 1층에 위치한 식당입니다.",
-  "open_times": {
-    "Breakfast": "07:40 ~ 09:00",
-    "Lunch": "11:30 ~ 13:20",
-    "Dinner": "17:30 ~ 19:00"
-  }
+  "restaurants": [
+    {
+      "code": "re13",
+      "name": "창의인재원식당",
+      "address": "경기도 안산시 상록구 한양대학로 55",
+      "building": "창의인재원",
+      "floor": "1층",
+      "latitude": "37.291276",
+      "longitude": "126.836354",
+      "description": "창의인재원 1층에 위치한 식당입니다.",
+      "open_times": {
+        "Breakfast": "07:40 ~ 09:00",
+        "Lunch": "11:30 ~ 13:20",
+        "Dinner": "17:30 ~ 19:00"
+      }
+    }
+  ]
 }
 ```
 
@@ -283,7 +295,7 @@ curl -X GET "https://에리카밥.com/api/v1/meals/restaurants/re13"
 ```bash
 # 급식 정보 수집 (관리자용)
 curl -X POST "https://에리카밥.com/api/v1/meals/fetch" \
-  -H "X-API-Key: admin_meal_api_2025"
+  -H "X-API-Key: your_api_key"
 ```
 
 **응답 예시:**
@@ -346,31 +358,92 @@ curl -X GET "https://에리카밥.com/api/v1/meals/parse/re12?year=2025&month=10
 }
 ```
 
-### 급식 정보 조회 (DB)
+### 급식 정보 조회
 
+급식 조회 API를 사용하면 식당과 시간대를 자유롭게 조합할 수 있습니다.
+
+#### 1️⃣ 오늘의 모든 식당, 모든 시간대
 ```bash
-curl -X GET "https://에리카밥.com/api/v1/meals/re11?year=2025&month=10&day=1"
+curl -X GET "https://에리카밥.com/api/v1/meals"
 ```
+
+#### 2️⃣ 특정 날짜의 모든 식당
+```bash
+curl -X GET "https://에리카밥.com/api/v1/meals?year=2025&month=9&day=15"
+```
+
+#### 3️⃣ 오늘의 특정 식당들 (콤마로 구분)
+```bash
+curl -X GET "https://에리카밥.com/api/v1/meals?restaurant_codes=re11,re12"
+```
+
+#### 4️⃣ 오늘의 모든 식당, 특정 시간대만
+```bash
+curl -X GET "https://에리카밥.com/api/v1/meals?meal_types=중식,석식"
+# 또는 숫자 사용 (1=조식, 2=중식, 3=석식)
+curl -X GET "https://에리카밥.com/api/v1/meals?meal_types=2,3"
+```
+
+#### 5️⃣ 특정 식당의 특정 시간대
+```bash
+curl -X GET "https://에리카밥.com/api/v1/meals?restaurant_codes=re11,re12&meal_types=중식"
+# 또는 숫자 사용
+curl -X GET "https://에리카밥.com/api/v1/meals?restaurant_codes=re11,re12&meal_types=2"
+```
+
+#### 6️⃣ 특정 날짜, 특정 식당, 특정 시간대
+```bash
+curl -X GET "https://에리카밥.com/api/v1/meals?year=2025&month=9&day=15&restaurant_codes=re11,re13&meal_types=중식"
+# 또는 숫자 사용
+curl -X GET "https://에리카밥.com/api/v1/meals?year=2025&month=9&day=15&restaurant_codes=re11,re13&meal_types=2"
+```
+
+#### 💡 식사 종류 표기법
+- **한글**: 조식, 중식, 석식
+- **숫자**: 1 (조식), 2 (중식), 3 (석식)
+- **혼용 가능**: `meal_types=조식,2,석식`
 
 **응답 예시:**
 ```json
 {
-  "restaurant": "교직원식당",
-  "date": "2025. 10. 01",
-  "day_of_week": "수요일",
-  "조식": [],
-  "중식": [
+  "date": "2025. 09. 15",
+  "day_of_week": "월요일",
+  "restaurants": [
     {
-      "id": 1,
-      "korean_name": ["스팸마요덮밥", "꼬치어묵국", "고로케&케찹"],
-      "tags": ["중식A"],
-      "price": "6,500",
-      "image_url": "https://...",
-      "average_rating": 4.2,
-      "rating_count": 15
+      "restaurant_code": "re11",
+      "restaurant_name": "교직원식당",
+      "조식": [],
+      "중식": [
+        {
+          "id": 1,
+          "korean_name": ["스팸마요덮밥", "꼬치어묵국", "고로케&케찹"],
+          "tags": ["중식A"],
+          "price": "6,500",
+          "image_url": "https://...",
+          "average_rating": 4.2,
+          "rating_count": 15
+        }
+      ],
+      "석식": []
+    },
+    {
+      "restaurant_code": "re12",
+      "restaurant_name": "학생식당",
+      "조식": [],
+      "중식": [
+        {
+          "id": 2,
+          "korean_name": ["제육볶음", "된장찌개", "김치"],
+          "tags": ["중식B"],
+          "price": "5,500",
+          "image_url": "https://...",
+          "average_rating": 4.5,
+          "rating_count": 28
+        }
+      ],
+      "석식": []
     }
-  ],
-  "석식": []
+  ]
 }
 ```
 
@@ -406,8 +479,8 @@ curl -X POST "https://에리카밥.com/api/v1/keywords/review" \
 |------|--------|------|----------|
 | `re11` | 교직원식당 | 학생회관 3층 | 중식: 11:30~13:30 |
 | `re12` | 학생식당 | 학생회관 2층 | 중식: 11:30~13:30 |
-| `re13` | 창의인재원식당 | 창의인재원 1층 | 조식: 07:40~09:00<br>중식: 11:30~13:20<br>석식: 17:30~19:00 |
-| `re15` | 창업보육센터 | 창업보육센터 지하 1층 | 중식: 11:30~13:30<br>석식: 17:00~18:30 |
+| `re13` | 창의인재원식당 | 창의인재원 1층 | 조식: 07:40~09:00 <br> 중식: 11:30~13:20 <br> 석식: 17:30~19:00 |
+| `re15` | 창업보육센터 | 창업보육센터 지하 1층 | 중식: 11:30~13:30 <br> 석식: 17:00~18:30 |
 
 ---
 
@@ -545,11 +618,25 @@ WantedBy=multi-user.target
 
 #### **사용 예시**
 ```bash
-# 식당 위치 및 운영시간 정보 조회
-curl "https://에리카밥.com/api/v1/meals/restaurants/re13"
+# 오늘의 모든 식당 급식 조회
+curl "https://에리카밥.com/api/v1/meals"
+
+# 특정 식당들의 중식만 조회
+curl "https://에리카밥.com/api/v1/meals?restaurant_codes=re11,re12&meal_types=중식"
+# 또는 숫자 사용 (1=조식, 2=중식, 3=석식)
+curl "https://에리카밥.com/api/v1/meals?restaurant_codes=re11,re12&meal_types=2"
 
 # 교직원식당 오늘 메뉴 조회
-curl "https://에리카밥.com/api/v1/meals/re11/today"
+curl "https://에리카밥.com/api/v1/meals?restaurant_codes=re11"
+
+# 특정 날짜의 특정 식당 조회
+curl "https://에리카밥.com/api/v1/meals?year=2025&month=9&day=15&restaurant_codes=re11"
+
+# 식당 정보 조회 (모든 식당)
+curl "https://에리카밥.com/api/v1/meals/restaurants"
+
+# 특정 식당 정보 조회
+curl "https://에리카밥.com/api/v1/meals/restaurants?restaurant_codes=re13"
 
 # 웹에서 실시간 파싱
 curl "https://에리카밥.com/api/v1/meals/parse/re12?year=2025&month=10&day=1"

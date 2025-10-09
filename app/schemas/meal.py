@@ -85,3 +85,27 @@ class RestaurantsResponse(BaseModel):
     """식당 목록 응답"""
     restaurants: List[RestaurantInfo]
 
+
+class RestaurantsDetailResponse(BaseModel):
+    """식당 상세 정보 응답"""
+    restaurants: List[RestaurantDetailInfo]
+
+
+class RestaurantMeals(BaseModel):
+    """식당별 급식 정보"""
+    restaurant_code: str = Field(..., description="식당 코드")
+    restaurant_name: str = Field(..., description="식당 이름")
+    breakfast: List[MealInDB] = Field(default=[], description="조식", alias="조식")
+    lunch: List[MealInDB] = Field(default=[], description="중식", alias="중식")
+    dinner: List[MealInDB] = Field(default=[], description="석식", alias="석식")
+    
+    class Config:
+        populate_by_name = True
+
+
+class FlexibleMealResponse(BaseModel):
+    """유연한 급식 조회 응답"""
+    date: str = Field(..., description="날짜")
+    day_of_week: str = Field(default="", description="요일")
+    restaurants: List[RestaurantMeals] = Field(..., description="식당별 급식 정보")
+
