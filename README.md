@@ -197,9 +197,15 @@ EOF
 ### 4️⃣ **데이터베이스 초기화**
 
 ```bash
-# 테이블 생성 및 기본 데이터 삽입
+# 환경변수(.env) 설정 후 실행
+# 테이블 생성 및 기본 데이터(식당, 키워드) 삽입
 python scripts/setup_db.py
 ```
+
+**setup_db.py 기능:**
+- 모든 테이블 자동 생성 (restaurants, meals, ratings, keywords, meal_keyword_reviews)
+- 기본 식당 데이터 삽입 (4개 식당)
+- 기본 키워드 데이터 삽입 (30개 키워드: 긍정 15개, 부정 15개)
 
 ### 5️⃣ **서버 실행**
 
@@ -213,7 +219,19 @@ uvicorn app.main:app --host 0.0.0.0 --port 5401
 
 ### 6️⃣ **급식 데이터 수집**
 
-서버 실행 후 브라우저에서 [API 문서](https://에리카밥.com/docs) 접속하여 `POST /api/v1/meals/fetch` 실행
+**방법 1: 스크립트 사용 (권장)**
+```bash
+# 특정 월의 전체 데이터 수집
+python scripts/fetch_meals.py 2025 9
+python scripts/fetch_meals.py 2025 10
+```
+
+**방법 2: API 사용 (관리자 키 필요)**
+```bash
+# 오늘부터 2주치 데이터 자동 수집
+curl -X POST http://localhost:5401/api/v1/meals/fetch \
+  -H "X-API-Key: your_api_key"
+```
 
 ---
 
@@ -523,9 +541,14 @@ meal_api/
 │   ├── 📁 schemas/             # Pydantic 스키마
 │   ├── 📁 db/                  # 데이터베이스 연결
 │   └── 📁 core/                # 설정
-├── 📁 scripts/                 # 유틸리티 스크립트
+├── 📁 scripts/                 # 데이터베이스 초기화 및 데이터 수집 스크립트
+│   ├── setup_db.py             # DB 초기화 (필수)
+│   ├── fetch_meals.py          # 급식 데이터 수집 (선택)
+│   └── README.md               # 스크립트 사용법
 ├── 📄 requirements.txt         # 의존성 패키지
 └── 📖 README.md               # 프로젝트 문서
+
+※ 개인 스크립트는 my_scripts/ 폴더에 보관 (.gitignore에 포함)
 ```
 
 ### 데이터 흐름
