@@ -34,6 +34,9 @@ MANIFEST
 .env.test.local
 .env.production.local
 
+# API 키 백업 파일
+API_KEYS.txt
+
 # IDE
 .vscode/
 .idea/

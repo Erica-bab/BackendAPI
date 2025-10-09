@@ -89,8 +89,15 @@ class Settings(BaseSettings):
     MEAL_FETCH_DAYS_AHEAD: int = 14  # 현재부터 2주치 데이터 수집
     MEAL_FETCH_SCHEDULE: str = "0 2 * * *"  # 매일 새벽 2시에 실행 (cron 표현식)
     
-    # 관리자 API 키 설정
-    ADMIN_API_KEY: str = "admin_meal_api_2025"  # 패치 API용 인증 키
+    # 관리자 API 키 설정 (콤마로 구분된 문자열)
+    ADMIN_API_KEYS: str = ""  # 여러 개의 API 키를 콤마로 구분 (예: "key1,key2,key3")
+    
+    @property
+    def api_keys_list(self) -> List[str]:
+        """API 키 리스트 반환"""
+        if not self.ADMIN_API_KEYS:
+            return []
+        return [key.strip() for key in self.ADMIN_API_KEYS.split(",") if key.strip()]
     
     class Config:
         case_sensitive = True
