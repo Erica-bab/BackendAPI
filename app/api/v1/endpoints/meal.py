@@ -17,7 +17,7 @@ from app.api.dependencies import AdminAuth
 router = APIRouter()
 
 
-@router.get("/", response_model=FlexibleMealResponse, summary="급식 정보 조회")
+@router.get("/", summary="급식 정보 조회")
 async def get_meals_flexible(
     year: Optional[int] = Query(None, description="연도 (기본값: 오늘)"),
     month: Optional[int] = Query(None, ge=1, le=12, description="월 (1-12, 기본값: 오늘)"),
@@ -137,37 +137,44 @@ async def get_meals_flexible(
         # 응답 데이터 구성
         restaurants_list = []
         
+        # 응답에 포함할 식사 종류 결정 (지정되지 않으면 모든 종류)
+        meal_types_to_include = meal_types_list if meal_types_list else ["조식", "중식", "석식"]
+        
         # restaurant_codes_list가 지정된 경우 해당 순서대로, 아니면 설정 순서대로
         codes_to_use = restaurant_codes_list if restaurant_codes_list else list(settings.RESTAURANT_CODES.keys())
         
         for code in codes_to_use:
             # 데이터가 있는 식당만 포함
             if code in restaurants_data or code in restaurant_info:
-                restaurant_meals = RestaurantMeals(
-                    restaurant_code=code,
-                    restaurant_name=restaurant_info.get(code, settings.RESTAURANT_CODES.get(code, code)),
-                    조식=restaurants_data[code]["조식"],
-                    중식=restaurants_data[code]["중식"],
-                    석식=restaurants_data[code]["석식"]
-                )
-                restaurants_list.append(restaurant_meals)
+                # 식당 기본 정보
+                restaurant_meal_data = {
+                    "restaurant_code": code,
+                    "restaurant_name": restaurant_info.get(code, settings.RESTAURANT_CODES.get(code, code))
+                }
+                
+                # 선택한 식사 종류만 추가
+                for meal_type in meal_types_to_include:
+                    restaurant_meal_data[meal_type] = restaurants_data[code][meal_type]
+                
+                restaurants_list.append(restaurant_meal_data)
         
         # 데이터가 전혀 없는 경우에도 요청한 식당 정보는 포함 (빈 리스트로)
         if not restaurants_list and restaurant_codes_list:
             for code in restaurant_codes_list:
-                restaurants_list.append(RestaurantMeals(
-                    restaurant_code=code,
-                    restaurant_name=settings.RESTAURANT_CODES.get(code, code),
-                    조식=[],
-                    중식=[],
-                    석식=[]
-                ))
+                restaurant_meal_data = {
+                    "restaurant_code": code,
+                    "restaurant_name": settings.RESTAURANT_CODES.get(code, code)
+                }
+                # 선택한 식사 종류만 빈 리스트로 추가
+                for meal_type in meal_types_to_include:
+                    restaurant_meal_data[meal_type] = []
+                restaurants_list.append(restaurant_meal_data)
         
-        return FlexibleMealResponse(
-            date=target_date.strftime("%Y. %m. %d"),
-            day_of_week=day_of_week,
-            restaurants=restaurants_list
-        )
+        return {
+            "date": target_date.strftime("%Y. %m. %d"),
+            "day_of_week": day_of_week,
+            "restaurants": restaurants_list
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 오류: {str(e)}")
