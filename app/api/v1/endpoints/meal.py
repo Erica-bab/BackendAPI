@@ -349,3 +349,74 @@ async def fetch_meals(
         "days_ahead": settings.MEAL_FETCH_DAYS_AHEAD
     }
 
+
+@router.post("/remove-duplicates", summary="중복 급식 데이터 제거 (관리자용)")
+async def remove_duplicate_meals(
+    db: Session = Depends(get_db),
+    api_key: str = AdminAuth
+):
+    """
+    중복된 급식 데이터를 제거합니다. (관리자용)
+    
+    동일한 restaurant_id, date, meal_type, korean_name을 가진 중복 데이터를 찾아서
+    가장 최신에 생성된 것만 남기고 나머지는 삭제합니다.
+    
+    **인증 필요**: X-API-Key 헤더에 관리자 API 키를 포함해야 합니다.
+    
+    **응답**:
+    - total_meals_before: 중복 제거 전 총 급식 데이터 수
+    - deleted_count: 삭제된 중복 데이터 수
+    - total_meals_after: 중복 제거 후 총 급식 데이터 수
+    """
+    from app.models.meal import Meal
+    
+    try:
+        # 중복 제거 전 데이터 개수
+        total_before = db.query(Meal).count()
+        
+        # 중복 데이터 찾기 및 제거
+        all_meals = db.query(Meal).order_by(Meal.restaurant_id, Meal.date, Meal.meal_type).all()
+        
+        seen = {}
+        duplicates_to_delete = []
+        
+        for meal in all_meals:
+            # 고유 키 생성
+            key = (
+                meal.restaurant_id,
+                meal.date,
+                meal.meal_type,
+                str(meal.korean_name)  # JSON을 문자열로 변환
+            )
+            
+            if key in seen:
+                # 중복 발견 - 이전 것을 삭제 대상으로 표시
+                duplicates_to_delete.append(seen[key])
+                # 현재 것을 최신으로 갱신
+                seen[key] = meal
+            else:
+                # 처음 본 조합
+                seen[key] = meal
+        
+        # 중복 데이터 삭제
+        deleted_count = 0
+        for meal_to_delete in duplicates_to_delete:
+            db.delete(meal_to_delete)
+            deleted_count += 1
+        
+        db.commit()
+        
+        # 중복 제거 후 데이터 개수
+        total_after = db.query(Meal).count()
+        
+        return {
+            "message": "중복 급식 데이터 제거 완료",
+            "total_meals_before": total_before,
+            "deleted_count": deleted_count,
+            "total_meals_after": total_after
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"중복 제거 중 오류 발생: {str(e)}")
+

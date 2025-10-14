@@ -104,7 +104,25 @@ class HTMLParser:
                     if meal_item:
                         meals[meal_type].append(meal_item)
         
+        # 각 식사 종류별로 중복 제거
+        for meal_type in ["조식", "중식", "석식"]:
+            meals[meal_type] = self._remove_duplicate_meals(meals[meal_type])
+        
         return meals
+    
+    def _remove_duplicate_meals(self, meal_list: List[Dict]) -> List[Dict]:
+        """메뉴 리스트에서 중복 제거 (korean_name 기준)"""
+        seen = set()
+        unique_meals = []
+        
+        for meal in meal_list:
+            # korean_name을 문자열로 변환하여 중복 체크
+            korean_key = str(meal.get("korean", []))
+            if korean_key not in seen:
+                seen.add(korean_key)
+                unique_meals.append(meal)
+        
+        return unique_meals
     
     def _find_menu_items_after_h4(self, h4_element) -> List[Dict]:
         """h4 요소 다음에 오는 메뉴 아이템들 찾기"""

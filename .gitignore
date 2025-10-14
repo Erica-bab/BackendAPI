@@ -65,6 +65,9 @@ logs/
 # 스크립트 폴더 (개발/배포용 스크립트)
 my_scripts/
 
+# 프론트엔드 폴더
+frontend/
+
 # 임시 파일
 *.tmp
 *.temp

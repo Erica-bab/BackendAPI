@@ -10,6 +10,8 @@
 
 [🌐 라이브 데모](https://에리카밥.com) • [📖 API 문서](https://에리카밥.com/docs) • [🚀 시작하기](#-빠른-시작) • [📋 API 목록](#-api-엔드포인트)
 
+> 💡 **프론트엔드**: 이 저장소는 백엔드 API 서버입니다. 프론트엔드는 `frontend/` 폴더에 별도로 관리됩니다.
+
 </div>
 
 ---
@@ -538,6 +540,28 @@ curl -X POST "https://에리카밥.com/api/v1/keywords/review" \
 
 ---
 
+## 📱 프론트엔드
+
+이 저장소의 `frontend/` 폴더에는 모바일 최적화된 급식 안내 웹 애플리케이션이 포함되어 있습니다.
+
+### 주요 기능
+- ✅ **날짜 선택** - 원하는 날짜의 급식 조회
+- ✅ **식사 필터** - 조식/중식/석식 선택적 표시
+- ✅ 4개 식당 정보 통합 표시
+- ✅ 모바일 최적화 반응형 디자인
+- ✅ 순수 HTML/CSS/JavaScript (프레임워크 없음)
+
+### 실행 방법
+```bash
+cd frontend
+python -m http.server 8000
+# 접속: http://localhost:8000
+```
+
+**상세 정보**: [frontend/README.md](frontend/README.md) 참조
+
+---
+
 ## 🔧 개발
 
 ### 프로젝트 구조
@@ -558,6 +582,11 @@ meal_api/
 │   ├── setup_db.py             # DB 초기화 (필수)
 │   ├── fetch_meals.py          # 급식 데이터 수집 (선택)
 │   └── README.md               # 스크립트 사용법
+├── 📁 frontend/                # 프론트엔드 프로젝트 (별도 관리)
+│   ├── index.html              # 메인 웹페이지
+│   ├── app.js                  # JavaScript 로직
+│   ├── README.md               # 프론트엔드 문서
+│   └── .gitignore              # 프론트엔드용 gitignore
 ├── 📄 requirements.txt         # 의존성 패키지
 └── 📖 README.md               # 프로젝트 문서
 
