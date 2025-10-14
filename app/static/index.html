@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RICERICA</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta name="og:title" content="RICERICA">
+    <meta name="og:description" content="한양대학교 ERICA 캠퍼스 급식 정보를 실시간으로 확인하세요">
+    <meta name="og:image" content="/static/og-image.png">
+    <meta name="og:url" content="https://에리카밥.com">
+    <meta name="og:type" content="website">
+    <meta name="og:locale" content="ko_KR">
+    <meta name="og:site_name" content="RICERICA">
+    <meta name="og:image:width" content="1200">
+    <meta name="og:image:height" content="630">
+    <meta name="og:image:alt" content="RICERICA">
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="한양대학교 ERICA 캠퍼스 급식 정보를 실시간으로 확인하세요">
+    <meta name="theme-color" content="#ffa726">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="RICERICA">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-192x192.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-16x16.png">
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#f5e6d3">
+    <meta name="msapplication-TileImage" content="/static/icons/icon-144x144.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5e6d3;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .header {
+            text-align: center;
+            color: #8B4513;
+            margin-bottom: 24px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #8B4513;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+
+        .header .date {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .beta-badge {
+            display: inline-block;
+            background: rgba(139, 69, 19, 0.2);
+            color: #8B4513;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: block;
+            color: #8B4513;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-nav-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #8B4513;
+            background: transparent;
+            color: #8B4513;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .date-nav-btn:hover {
+            background: rgba(139, 69, 19, 0.1);
+        }
+
+        .date-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .date-display {
+            flex: 1;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .today-btn {
+            padding: 10px 16px;
+            border: 2px solid #8B4513;
+            background: transparent;
+            color: #8B4513;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .today-btn:hover {
+            background: rgba(139, 69, 19, 0.1);
+        }
+
+        .today-btn.today-active {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .meal-filter {
+            display: flex;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 4px;
+            position: relative;
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: #8B4513;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 2;
+            transition: color 0.3s;
+            border-radius: 8px;
+        }
+
+        .filter-btn.active {
+            color: white;
+        }
+
+        .slider-bg {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(33.333% - 4px);
+            height: calc(100% - 8px);
+            background: #ff6b6b;
+            border-radius: 8px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+            z-index: 1;
+        }
+
+        .slider-bg.position-0 {
+            transform: translateX(0);
+        }
+
+        .slider-bg.position-1 {
+            transform: translateX(calc(100% + 4px));
+        }
+
+        .slider-bg.position-2 {
+            transform: translateX(calc(200% + 4px));
+        }
+
+        .loading {
+            text-align: center;
+            color: #8B4513;
+            font-size: 16px;
+            padding: 40px;
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px;
+            text-align: center;
+            opacity: 0;
+            animation: bounceIn 0.5s ease-out forwards;
+        }
+
+        .restaurant-card {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: bounceInUp 0.6s ease-out forwards;
+        }
+
+        .restaurant-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .restaurant-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .restaurant-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .restaurant-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .restaurant-card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes bounceInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: translateY(-10px) scale(1.02);
+            }
+
+            70% {
+                opacity: 0.9;
+                transform: translateY(5px) scale(0.98);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .restaurant-header {
+            background: #e6d4ba;
+            color: #8B4513;
+            padding: 20px;
+            border-bottom: 2px solid #d4b896;
+        }
+
+        .restaurant-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #8B4513;
+        }
+
+        .restaurant-code {
+            font-size: 14px;
+            opacity: 0.9;
+            display: none;
+            /* 식당 코드 숨김 */
+        }
+
+        .meals-section {
+            padding: 20px;
+        }
+
+        .meal-type {
+            margin-bottom: 24px;
+        }
+
+        .meal-type:last-child {
+            margin-bottom: 0;
+        }
+
+        .meal-type-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f3f5;
+        }
+
+        .meal-type-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            margin-right: 8px;
+        }
+
+        .meal-type-icon.breakfast {
+            background: #ffd93d;
+        }
+
+        .meal-type-icon.lunch {
+            background: #ff6b6b;
+        }
+
+        .meal-type-icon.dinner {
+            background: #6c5ce7;
+        }
+
+        .meal-type-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .meal-item {
+            background: #f8f9fa;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .meal-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .meal-tags {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .meal-tag {
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .meal-menu {
+            margin-bottom: 6px;
+        }
+
+        .menu-item {
+            color: #495057;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 1px 0;
+        }
+
+        .menu-item::before {
+            content: "•";
+            color: #ff6b6b;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-right: 4px;
+        }
+
+        .meal-price {
+            color: #ff6b6b;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .no-meals {
+            text-align: center;
+            color: #868e96;
+            padding: 24px;
+            font-size: 14px;
+            opacity: 0;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .footer {
+            text-align: center;
+            color: #8B4513;
+            font-size: 12px;
+            margin-top: 32px;
+            opacity: 0.8;
+        }
+
+
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .restaurant-name {
+                font-size: 18px;
+            }
+
+            .meal-type-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ RICERICA</h1>
+            <span class="beta-badge">BETA</span>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">📅 날짜 선택</label>
+                <div class="date-selector">
+                    <button class="date-nav-btn" id="prevBtn" onclick="navigateDate(-1)">◀</button>
+                    <div class="date-display" id="dateDisplay"></div>
+                    <button class="date-nav-btn" id="nextBtn" onclick="navigateDate(1)">▶</button>
+                    <button class="today-btn" onclick="resetToToday()">오늘</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">🍽️ 식사 종류</label>
+                <div class="meal-filter">
+                    <div class="slider-bg" style="opacity: 0;"></div>
+                    <button class="filter-btn" data-meal="조식" data-index="0" onclick="selectMeal(this)">
+                        ☕ 조식
+                    </button>
+                    <button class="filter-btn" data-meal="중식" data-index="1" onclick="selectMeal(this)">
+                        🍚 중식
+                    </button>
+                    <button class="filter-btn" data-meal="석식" data-index="2" onclick="selectMeal(this)">
+                        🌙 석식
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="content">
+            <div class="loading">급식 정보를 불러오는 중...</div>
+        </div>
+
+        <div class="footer">
+            한양대학교 ERICA 캠퍼스 급식 정보<br>
+            © 2025 에리카밥.com
+        </div>
+    </div>
+
+
+    <script src="app.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW 등록 성공:', registration.scope);
+
+                        // 업데이트 확인
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 새 버전이 설치되었을 때 자동으로 업데이트
+                                    console.log('새로운 버전이 감지되어 자동 업데이트합니다.');
+                                    window.location.reload();
+                                }
+                            });
+                        });
+
+                        // 페이지 로드 시마다 업데이트 확인
+                        registration.update();
+
+                        // 주기적으로 업데이트 확인 (1분마다)
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW 등록 실패:', registrationError);
+                    });
+            });
+        }
+
+        // PWA 설치 프롬프트
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 기본 설치 프롬프트 방지
+            e.preventDefault();
+            // 나중에 사용할 수 있도록 이벤트 저장
+            deferredPrompt = e;
+
+            // 설치 버튼 표시 (모든 기기에서)
+            showInstallButton();
+        });
+
+        // PWA 설치 함수
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('PWA 설치 승인');
+                    } else {
+                        console.log('PWA 설치 거부');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // 설치 버튼 표시 함수
+        function showInstallButton() {
+            const installButton = document.createElement('button');
+            installButton.textContent = '📱 앱으로 설치';
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                padding: 12px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+                z-index: 1001;
+                transition: all 0.3s ease;
+            `;
+
+            // 타이머 변수
+            let hideTimer = null;
+
+            // 버튼 숨기기 함수
+            const hideButton = () => {
+                if (installButton.parentNode) {
+                    installButton.style.opacity = '0';
+                    installButton.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        if (installButton.parentNode) {
+                            installButton.parentNode.removeChild(installButton);
+                        }
+                    }, 300);
+                }
+            };
+
+            // 타이머 시작/리셋 함수
+            const startHideTimer = () => {
+                if (hideTimer) {
+                    clearTimeout(hideTimer);
+                }
+                hideTimer = setTimeout(hideButton, 10000);
+            };
+
+            // 초기 타이머 시작
+            startHideTimer();
+
+            // 클릭 이벤트
+            installButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                installPWA();
+                // 설치 시도 후 타이머 리셋
+                startHideTimer();
+            });
+
+            // 마우스 호버 이벤트
+            installButton.addEventListener('mouseenter', () => {
+                installButton.style.transform = 'translateY(-2px)';
+                installButton.style.boxShadow = '0 6px 20px rgba(255, 107, 107, 0.6)';
+                // 호버 시 타이머 리셋
+                startHideTimer();
+            });
+
+            installButton.addEventListener('mouseleave', () => {
+                installButton.style.transform = 'translateY(0)';
+                installButton.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.4)';
+            });
+
+            // 터치 이벤트 (모바일)
+            installButton.addEventListener('touchstart', () => {
+                // 터치 시 타이머 리셋
+                startHideTimer();
+            });
+
+            // 포커스 이벤트 (키보드 접근성)
+            installButton.addEventListener('focus', () => {
+                startHideTimer();
+            });
+
+            document.body.appendChild(installButton);
+        }
+
+        // PWA 설치 완료 이벤트
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('PWA가 설치되었습니다.');
+        });
+
+        // 오프라인 상태 감지
+        window.addEventListener('online', () => {
+            console.log('온라인 상태로 전환');
+            // 온라인 상태 알림
+            showStatusMessage('온라인 상태입니다', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('오프라인 상태로 전환');
+            // 오프라인 상태 알림
+            showStatusMessage('오프라인 상태입니다', 'warning');
+        });
+
+        // 상태 메시지 표시 함수
+        function showStatusMessage(message, type) {
+            const statusDiv = document.createElement('div');
+            statusDiv.textContent = message;
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'success' ? '#4CAF50' : '#FF9800'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-size: 14px;
+                font-weight: 600;
+                z-index: 1002;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+
+            // 애니메이션 스타일 추가
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            document.body.appendChild(statusDiv);
+
+            // 3초 후 제거
+            setTimeout(() => {
+                if (statusDiv.parentNode) {
+                    statusDiv.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => {
+                        if (statusDiv.parentNode) {
+                            statusDiv.parentNode.removeChild(statusDiv);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

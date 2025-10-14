@@ -36,10 +36,38 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"데이터베이스 테이블 생성 실패: {e}")
     
-    # 스케줄러 시작
+    # 스케줄러 시작 (파일 락으로 첫 번째 프로세스에서만)
     try:
-        start_scheduler()
-        logger.info("스케줄러 시작 완료")
+        import os
+        import fcntl
+        import tempfile
+        
+        # 스케줄러 락 파일 경로
+        lock_file_path = "/tmp/ricerica_scheduler.lock"
+        
+        try:
+            # 락 파일 열기
+            lock_file = open(lock_file_path, 'w')
+            
+            # 논블로킹 락 시도
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            
+            # 락 획득 성공 - 이 프로세스가 스케줄러를 담당
+            pid = os.getpid()
+            lock_file.write(str(pid))
+            lock_file.flush()
+            
+            start_scheduler()
+            logger.info(f"스케줄러 시작 완료 (마스터 프로세스 - PID: {pid})")
+            
+            # 락 파일은 프로세스 종료까지 유지 (자동으로 해제됨)
+            
+        except (IOError, OSError) as e:
+            # 락 획득 실패 - 다른 프로세스가 이미 스케줄러를 담당 중
+            logger.info(f"스케줄러 시작 건너뜀 (워커 프로세스 - PID: {os.getpid()})")
+            if 'lock_file' in locals():
+                lock_file.close()
+                
     except Exception as e:
         logger.error(f"스케줄러 시작 실패: {e}")
     
@@ -48,8 +76,14 @@ async def lifespan(app: FastAPI):
     # 종료 시
     logger.info("애플리케이션 종료")
     try:
-        stop_scheduler()
-        logger.info("스케줄러 중지 완료")
+        import os
+        is_master = os.environ.get("MASTER_PROCESS", "false").lower() == "true"
+        
+        if is_master:
+            stop_scheduler()
+            logger.info("스케줄러 중지 완료 (마스터 프로세스)")
+        else:
+            logger.info("스케줄러 중지 건너뜀 (워커 프로세스)")
     except Exception as e:
         logger.error(f"스케줄러 중지 실패: {e}")
 
@@ -77,18 +111,31 @@ if settings.BACKEND_CORS_ORIGINS:
 # API 라우터 등록
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+# frontend 셋팅
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.get("/", tags=["root"])
 async def root():
-    """API 루트 엔드포인트"""
-    return {
-        "message": "한양대학교 급식 API",
-        "version": settings.VERSION,
-        "description": "급식 정보 조회 및 평점/리뷰 기능",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    """메인 페이지"""
+    return FileResponse("index.html")
 
+@app.get("/sw.js")
+async def get_sw_js():
+    """Service Worker 파일"""
+    return FileResponse("app/static/sw.js")
+
+@app.get("manifest.json")
+async def get_manifest_json():
+    """Manifest 파일"""
+    return FileResponse("app/static/manifest.json")
+
+@app.get("/static/{file_name}")
+async def get_file(file_name: str):
+    """정적 파일 서빙"""
+    return FileResponse(f"app/static/{file_name}")
 
 @app.get("/health", tags=["health"])
 async def health_check():
