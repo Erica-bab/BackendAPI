@@ -103,7 +103,7 @@ class MealFetcher:
             
             if meals:  # 해당 식사 종류에 메뉴가 있는 경우만 처리
                 try:
-                    # 1. 해당 날짜/식당/식사종류의 기존 메뉴 모두 삭제
+                    # 1. 기존 메뉴들 조회
                     from app.models.meal import Meal
                     existing_meals = db.query(Meal).filter(
                         Meal.restaurant_id == restaurant.id,
@@ -111,36 +111,60 @@ class MealFetcher:
                         Meal.meal_type == meal_type
                     ).all()
                     
-                    if existing_meals:
-                        logger.info(f"기존 메뉴 삭제: {restaurant.name} {target_date} {meal_type} ({len(existing_meals)}개)")
-                        for old_meal in existing_meals:
-                            db.delete(old_meal)
-                        db.commit()
+                    logger.info(f"{meal_type} 처리 시작: {restaurant.name} {target_date} - 기존 {len(existing_meals)}개, 신규 {len(meals)}개")
                     
-                    # 2. 새로운 메뉴들 저장
-                    for meal_item in meals:
+                    # 2. 기존 메뉴를 업데이트하거나 새로 생성
+                    updated_existing_ids = set()
+                    
+                    for i, meal_item in enumerate(meals):
                         try:
                             new_korean = meal_item["korean"] if isinstance(meal_item["korean"], list) else [meal_item["korean"]]
                             
-                            crud_meal.create_meal(
-                                db=db,
-                                restaurant_id=restaurant.id,
-                                date=target_date,
-                                day_of_week=meal_data.get("day_of_week", ""),
-                                meal_type=meal_type,
-                                korean_name=meal_item["korean"],
-                                tags=meal_item.get("tags", []),
-                                price=meal_item.get("price", ""),
-                                image_url=meal_item.get("image", "")
-                            )
-                            saved_count += 1
-                            logger.info(f"새 메뉴 저장: {restaurant.name} {target_date} {meal_type} - {new_korean}")
+                            # 기존 메뉴 중에서 같은 순서의 메뉴 찾기 (i번째)
+                            existing_meal = None
+                            if i < len(existing_meals):
+                                existing_meal = existing_meals[i]
+                                updated_existing_ids.add(existing_meal.id)
                             
+                            if existing_meal:
+                                # 기존 메뉴 업데이트 (ID 유지, 평점 데이터 보존)
+                                existing_meal.korean_name = meal_item["korean"]
+                                existing_meal.tags = meal_item.get("tags", [])
+                                existing_meal.price = meal_item.get("price", "")
+                                existing_meal.image_url = meal_item.get("image", "")
+                                existing_meal.day_of_week = meal_data.get("day_of_week", "")
+                                db.commit()
+                                
+                                saved_count += 1
+                                logger.info(f"메뉴 업데이트: {restaurant.name} {target_date} {meal_type} (ID: {existing_meal.id}) - {new_korean}")
+                            else:
+                                # 새 메뉴 생성
+                                new_meal = crud_meal.create_meal(
+                                    db=db,
+                                    restaurant_id=restaurant.id,
+                                    date=target_date,
+                                    day_of_week=meal_data.get("day_of_week", ""),
+                                    meal_type=meal_type,
+                                    korean_name=meal_item["korean"],
+                                    tags=meal_item.get("tags", []),
+                                    price=meal_item.get("price", ""),
+                                    image_url=meal_item.get("image", "")
+                                )
+                                saved_count += 1
+                                logger.info(f"새 메뉴 생성: {restaurant.name} {target_date} {meal_type} (ID: {new_meal.id}) - {new_korean}")
+                                
                         except Exception as meal_error:
-                            logger.error(f"개별 메뉴 저장 실패: {meal_error}")
+                            logger.error(f"개별 메뉴 처리 실패: {meal_error}")
                             logger.error(f"메뉴 데이터: {meal_item}")
                             import traceback
                             logger.error(f"상세 오류: {traceback.format_exc()}")
+                    
+                    # 3. 더 이상 필요없는 기존 메뉴들 삭제 (메뉴 개수가 줄어든 경우)
+                    for existing_meal in existing_meals:
+                        if existing_meal.id not in updated_existing_ids:
+                            logger.info(f"불필요한 메뉴 삭제: {restaurant.name} {target_date} {meal_type} (ID: {existing_meal.id}) - {existing_meal.korean_name}")
+                            db.delete(existing_meal)
+                            db.commit()
                             
                 except Exception as meal_type_error:
                     logger.error(f"{meal_type} 저장 실패: {meal_type_error}")
