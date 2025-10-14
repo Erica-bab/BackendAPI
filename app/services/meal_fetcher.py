@@ -137,7 +137,7 @@ class MealFetcher:
                             logger.info(f"새 메뉴 저장: {restaurant.name} {target_date} {meal_type} - {new_korean}")
                             
                         except Exception as meal_error:
-                            logger.error(f"개별 메뉴 저장 실패: {e}")
+                            logger.error(f"개별 메뉴 저장 실패: {meal_error}")
                             logger.error(f"메뉴 데이터: {meal_item}")
                             import traceback
                             logger.error(f"상세 오류: {traceback.format_exc()}")
