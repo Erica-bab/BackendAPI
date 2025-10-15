@@ -19,14 +19,30 @@ async def create_or_update_rating(
     메뉴에 평점을 등록하거나 수정합니다.
     
     - 같은 사용자가 같은 메뉴에 이미 평점을 남긴 경우 수정됩니다.
+    - **오픈시간 제한**: 당일 해당 식사 종류의 오픈시간에만 작성 가능
     - **meal_id**: 메뉴 ID
     - **user_id**: 사용자 ID
     - **rating**: 평점 (1.0 ~ 5.0)
+    
+    ### 오픈시간:
+    - **조식**: 07:40 ~ 09:00
+    - **중식**: 11:30 ~ 13:30
+    - **석식**: 17:30 ~ 19:00
     """
     # 메뉴 존재 확인
     meal = crud_meal.get_meal_by_id(db, rating_data.meal_id)
     if not meal:
         raise HTTPException(status_code=404, detail="메뉴를 찾을 수 없습니다.")
+    
+    # 오픈시간 체크
+    from app.utils.meal_time_checker import check_review_permission
+    permission = check_review_permission(meal.meal_type, meal.date)
+    
+    if not permission["allowed"]:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"리뷰 작성 불가: {permission['reason']} (오픈시간: {permission['open_time']}, 현재: {permission['current_time']})"
+        )
     
     try:
         rating = crud_rating.create_or_update_rating(db, rating_data)

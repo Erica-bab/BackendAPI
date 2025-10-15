@@ -350,6 +350,30 @@ async def fetch_meals(
     }
 
 
+# @router.get("/open-times", summary="식사 종류별 오픈시간 조회")
+# async def get_meal_open_times():
+#     """
+#     식사 종류별 오픈시간을 조회합니다.
+    
+#     리뷰 작성 가능한 시간대를 확인할 수 있습니다.
+#     """
+#     from app.utils.meal_time_checker import MEAL_OPEN_TIMES, get_meal_open_time_string
+    
+#     result = {}
+#     for meal_type in ["조식", "중식", "석식"]:
+#         result[meal_type] = {
+#             "open_time": get_meal_open_time_string(meal_type),
+#             "start_time": MEAL_OPEN_TIMES[meal_type]["start"].strftime("%H:%M"),
+#             "end_time": MEAL_OPEN_TIMES[meal_type]["end"].strftime("%H:%M")
+#         }
+    
+#     return {
+#         "message": "식사 종류별 오픈시간",
+#         "open_times": result,
+#         "note": "리뷰는 당일 해당 식사 종류의 오픈시간에만 작성 가능합니다."
+#     }
+
+
 @router.post("/remove-duplicates", summary="중복 급식 데이터 제거 (관리자용)")
 async def remove_duplicate_meals(
     db: Session = Depends(get_db),
