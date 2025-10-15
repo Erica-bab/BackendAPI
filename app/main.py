@@ -122,19 +122,11 @@ async def root():
     """메인 페이지"""
     return FileResponse("index.html")
 
-@app.get("/sw.js")
-async def get_sw_js():
-    """Service Worker 파일"""
-    return FileResponse("app/static/sw.js")
-
-@app.get("manifest.json")
-async def get_manifest_json():
-    """Manifest 파일"""
-    return FileResponse("app/static/manifest.json")
-
-@app.get("/static/{file_name}")
+@app.get("/{file_name}")
 async def get_file(file_name: str):
     """정적 파일 서빙"""
+    if file_name.startswith("/static"):
+        file_name = file_name[7:]
     return FileResponse(f"app/static/{file_name}")
 
 @app.get("/health", tags=["health"])

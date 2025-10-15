@@ -1,7 +1,10 @@
 // Service Worker for 한양대 급식 PWA
-const CACHE_NAME = 'erica-meal-v1.0.1';
-const STATIC_CACHE = 'erica-meal-static-v1';
-const DYNAMIC_CACHE = 'erica-meal-dynamic-v1';
+const CACHE_NAME = 'erica-meal-v3.4.4';
+const STATIC_CACHE = 'erica-meal-static-v3.4.4';
+const DYNAMIC_CACHE = 'erica-meal-dynamic-v3.4.4';
+
+// CACHE_NAME에서 버전 추출
+const SW_VERSION = CACHE_NAME.split('-v')[1] || 'unknown';
 
 // 캐시할 정적 파일들
 const STATIC_FILES = [
@@ -42,7 +45,8 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            // 현재 버전이 아닌 모든 캐시 삭제
+            if (!cacheName.includes('v3.4.2')) {
               console.log('오래된 캐시 삭제:', cacheName);
               return caches.delete(cacheName);
             }
@@ -66,8 +70,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // API 응답을 동적 캐시에 저장
-          if (response.ok) {
+          // GET 요청만 캐시에 저장 (POST, PUT, DELETE 등은 캐시 불가)
+          if (response.ok && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then((cache) => {
@@ -77,46 +81,56 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // 네트워크 실패 시 캐시에서 응답
-          return caches.match(request);
+          // 네트워크 실패 시 GET 요청만 캐시에서 응답
+          if (request.method === 'GET') {
+            return caches.match(request);
+          }
+          // POST 등은 캐시에서 응답하지 않음
+          return new Response('Network error', { status: 503 });
         })
     );
     return;
   }
   
-  // 정적 파일은 캐시 우선
-  event.respondWith(
-    caches.match(request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        
-        // 캐시에 없으면 네트워크에서 가져오기
-        return fetch(request)
-          .then((response) => {
-            // 유효한 응답인지 확인
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // 응답을 캐시에 저장
-            const responseToCache = response.clone();
-            caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(request, responseToCache);
-              });
-            
+  // 정적 파일은 캐시 우선 (GET 요청만)
+  if (request.method === 'GET') {
+    event.respondWith(
+      caches.match(request)
+        .then((response) => {
+          if (response) {
             return response;
-          })
-          .catch(() => {
-            // 오프라인 페이지 표시
-            if (request.destination === 'document') {
-              return caches.match('/index.html');
-            }
-          });
-      })
-  );
+          }
+          
+          // 캐시에 없으면 네트워크에서 가져오기
+          return fetch(request)
+            .then((response) => {
+              // 유효한 응답인지 확인
+              if (!response || response.status !== 200 || response.type !== 'basic') {
+                return response;
+              }
+              
+              // 응답을 캐시에 저장
+              const responseToCache = response.clone();
+              caches.open(DYNAMIC_CACHE)
+                .then((cache) => {
+                  cache.put(request, responseToCache);
+                });
+              
+              return response;
+            })
+            .catch(() => {
+              // 오프라인 페이지 표시
+              if (request.destination === 'document') {
+                return caches.match('/index.html');
+              }
+              return new Response('Offline', { status: 503 });
+            });
+        })
+    );
+  } else {
+    // GET이 아닌 요청은 네트워크로만 처리
+    event.respondWith(fetch(request));
+  }
 });
 
 // 백그라운드 동기화 (선택사항)
@@ -211,11 +225,19 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  
+  // 버전 정보 요청 처리
+  if (event.data && event.data.type === 'GET_VERSION') {
+    const port = event.ports[0];
+    if (port) {
+      port.postMessage({ version: SW_VERSION });
+    }
+  }
 });
 
-// 주기적으로 업데이트 확인 (5분마다)
+// 주기적으로 업데이트 확인 (1분마다)
 self.addEventListener('activate', () => {
   setInterval(() => {
     self.registration.update();
-  }, 300000); // 5분마다 업데이트 확인
+  }, 60000); // 1분마다 업데이트 확인
 });

@@ -459,6 +459,65 @@
             font-size: 16px;
         }
 
+        .meal-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 2px;
+        }
+
+        .star {
+            font-size: 16px;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .star.filled {
+            color: #ffd700;
+        }
+
+        .star.half {
+            background: linear-gradient(90deg, #ffd700 50%, #ddd 50%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .rating-score {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .meal-item {
+            position: relative;
+        }
+
+        .menu-id-debug {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 10px;
+            color: #ccc;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            opacity: 0.7;
+        }
+
+        .sw-version {
+            font-size: 10px;
+            color: #999;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
         .no-meals {
             text-align: center;
             color: #868e96;
@@ -554,10 +613,15 @@
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // 새 버전이 설치되었을 때 자동으로 업데이트
-                                    console.log('새로운 버전이 감지되어 자동 업데이트합니다.');
-                                    window.location.reload();
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // 새 버전이 설치되었을 때 자동으로 업데이트
+                                        console.log('새로운 버전이 감지되어 자동 업데이트합니다.');
+                                        window.location.reload();
+                                    } else {
+                                        // 첫 설치인 경우
+                                        console.log('Service Worker가 처음 설치되었습니다.');
+                                    }
                                 }
                             });
                         });
@@ -565,10 +629,10 @@
                         // 페이지 로드 시마다 업데이트 확인
                         registration.update();
 
-                        // 주기적으로 업데이트 확인 (1분마다)
+                        // 주기적으로 업데이트 확인 (30초마다)
                         setInterval(() => {
                             registration.update();
-                        }, 60000);
+                        }, 30000);
                     })
                     .catch((registrationError) => {
                         console.log('SW 등록 실패:', registrationError);

@@ -4,6 +4,7 @@ const API_BASE_URL = 'https://xn--oy2b88bd4n32i.com/api/v1';
 // 전역 변수
 let availableDates = [];
 let currentDateIndex = 0;
+let swVersion = 'unknown';
 
 // 시간 기반 날짜 결정 함수
 function getInitialDate() {
@@ -162,19 +163,35 @@ function updateDateDisplay() {
         const isToday = selectedDate.getTime() === today.getTime();
         const isTomorrow = isTomorrowMode() && selectedDate.getTime() === (new Date(today.getTime() + 24 * 60 * 60 * 1000)).getTime();
         
-        if (isToday || isTomorrow) {
-            if (todayBtn) {
+        // 더 간단한 로직: 오늘 날짜면 항상 "오늘" 표시
+        const shouldShowToday = isToday;
+        
+        // 내일 모드인지 확인
+        const isTomorrowModeActive = isTomorrowMode();
+        
+        // 디버깅 로그
+        console.log('날짜 디버깅:', {
+            selectedDate: selectedDate.toISOString().split('T')[0],
+            today: today.toISOString().split('T')[0],
+            isToday,
+            isTomorrow,
+            isTomorrowModeActive,
+            currentHour: new Date().getHours()
+        });
+        
+        if (todayBtn) {
+            if (isToday || isTomorrow) {
                 todayBtn.classList.add('today-active');
-                // 내일 모드일 때는 버튼 텍스트도 변경
-                if (isTomorrow) {
-                    todayBtn.textContent = '내일';
-                } else {
-                    todayBtn.textContent = '오늘';
-                }
-            }
-        } else {
-            if (todayBtn) {
+            } else {
                 todayBtn.classList.remove('today-active');
+            }
+            
+            // 버튼 텍스트 결정: 오늘 날짜면 항상 "오늘", 아니면 모드에 따라
+            if (shouldShowToday) {
+                todayBtn.textContent = '오늘';
+            } else if (isTomorrowModeActive) {
+                todayBtn.textContent = '내일';
+            } else {
                 todayBtn.textContent = '오늘';
             }
         }
@@ -197,6 +214,8 @@ function updateDateDisplay() {
         // 오늘 버튼 강조
         if (todayBtn) {
             todayBtn.classList.add('today-active');
+            // 오류 처리 시에는 항상 "오늘" 표시 (오늘 날짜로 폴백하므로)
+            todayBtn.textContent = '오늘';
         }
     }
 }
@@ -298,6 +317,123 @@ function getMealClass(mealType) {
     return classes[mealType] || '';
 }
 
+// 별점 표시 HTML 생성 함수
+function generateStarRating(averageRating) {
+    if (!averageRating || averageRating === 0) {
+        return ''; // 별점이 없으면 표시하지 않음
+    }
+    
+    const rating = Math.round(averageRating * 2) / 2; // 0.5 단위로 반올림
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHtml = '<div class="star-rating">';
+    
+    // 채워진 별
+    for (let i = 0; i < fullStars; i++) {
+        starsHtml += '<span class="star filled">★</span>';
+    }
+    
+    // 반별
+    if (hasHalfStar) {
+        starsHtml += '<span class="star half">★</span>';
+    }
+    
+    // 빈 별
+    for (let i = 0; i < emptyStars; i++) {
+        starsHtml += '<span class="star">★</span>';
+    }
+    
+    starsHtml += '</div>';
+    
+    return starsHtml;
+}
+
+// Service Worker 버전 가져오기
+async function getSWVersion() {
+    try {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration && registration.active) {
+                // Service Worker의 버전 정보를 가져오기 위해 메시지 전송
+                return new Promise((resolve) => {
+                    const messageChannel = new MessageChannel();
+                    messageChannel.port1.onmessage = (event) => {
+                        resolve(event.data.version || 'unknown');
+                    };
+                    
+                    navigator.serviceWorker.controller.postMessage(
+                        { type: 'GET_VERSION' },
+                        [messageChannel.port2]
+                    );
+                    
+                    // 타임아웃 설정 (1초)
+                    setTimeout(() => resolve(' unknown'), 1000);
+                });
+            }
+        }
+        return 'unknown';
+    } catch (error) {
+        console.error('Error getting SW version:', error);
+        return 'unknown';
+    }
+}
+
+// SW 버전 표시 업데이트
+async function updateSWVersion() {
+    const version = await getSWVersion();
+    swVersion = version;
+    
+    const footer = document.querySelector('.footer');
+    if (footer) {
+        // 기존 SW 버전 제거
+        const existingSWVersion = footer.querySelector('.sw-version');
+        if (existingSWVersion) {
+            existingSWVersion.remove();
+        }
+        
+        // 새로운 SW 버전 추가
+        const swVersionDiv = document.createElement('div');
+        swVersionDiv.className = 'sw-version';
+        swVersionDiv.textContent = `SW v${version}`;
+        footer.appendChild(swVersionDiv);
+    }
+    
+    // Service Worker 업데이트 체크 및 적용
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+                // 업데이트가 있으면 즉시 적용
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // 새 Service Worker가 설치되었으면 즉시 활성화
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                
+                                // 페이지 새로고침으로 새 버전 적용
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        });
+                    }
+                });
+                
+                // 주기적으로 업데이트 확인 (30초마다)
+                setInterval(async () => {
+                    await registration.update();
+                }, 30000);
+            }
+        } catch (error) {
+            console.error('Service Worker 업데이트 체크 실패:', error);
+        }
+    }
+}
+
 // 급식 데이터 로드
 async function loadMeals() {
     const contentDiv = document.getElementById('content');
@@ -394,6 +530,11 @@ function displayMeals(data) {
                         <div class="meal-item">
                     `;
 
+                    // 메뉴 ID 디버그 정보 표시
+                    if (meal.id) {
+                        html += `<div class="menu-id-debug">ID: ${meal.id}</div>`;
+                    }
+
                     // 태그 표시
                     if (meal.tags && meal.tags.length > 0) {
                         html += '<div class="meal-tags">';
@@ -415,6 +556,18 @@ function displayMeals(data) {
                     // 가격 표시
                     if (meal.price) {
                         html += `<div class="meal-price">${meal.price}원</div>`;
+                    }
+
+                    // 별점 표시
+                    if (meal.average_rating && meal.average_rating > 0) {
+                        const starsHtml = generateStarRating(meal.average_rating);
+                        const ratingScore = meal.average_rating.toFixed(2);
+                        html += `
+                            <div class="meal-rating">
+                                ${starsHtml}
+                                <span class="rating-score">${ratingScore}</span>
+                            </div>
+                        `;
                     }
 
                     html += `
@@ -531,6 +684,9 @@ async function initApp() {
         
         // 자정 체크 타이머 시작
         startMidnightCheck();
+        
+        // SW 버전 표시 업데이트
+        updateSWVersion();
         
         loadMeals();
     } catch (error) {
